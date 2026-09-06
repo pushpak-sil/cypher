@@ -1,0 +1,35 @@
+name: sih2026
+
+services:
+  vpn-left:
+    build: ./strongswan
+    container_name: vpn-left
+    hostname: vpn-left
+    cap_add:
+      - NET_ADMIN
+    networks:
+      vpnnet:
+        ipv4_address: 192.168.50.10
+    volumes:
+      - ./captures:/captures
+    tty: true
+
+  vpn-right:
+    build: ./strongswan
+    container_name: vpn-right
+    hostname: vpn-right
+    cap_add:
+      - NET_ADMIN
+    networks:
+      vpnnet:
+        ipv4_address: 192.168.50.11
+    volumes:
+      - ./captures:/captures
+    tty: true
+
+networks:
+  vpnnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.50.0/24
