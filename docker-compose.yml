@@ -12,7 +12,13 @@ services:
         ipv4_address: 192.168.50.10
     volumes:
       - ./captures:/captures
-    tty: true
+      - ./config/left.conf:/etc/ipsec.conf:ro
+      - ./config/ipsec.secrets:/etc/ipsec.secrets.template:ro
+    command: >
+      bash -c "cp /etc/ipsec.secrets.template /etc/ipsec.secrets &&
+               chmod 600 /etc/ipsec.secrets &&
+               ipsec start &&
+               sleep infinity"
 
   vpn-right:
     build: ./strongswan
@@ -25,7 +31,13 @@ services:
         ipv4_address: 192.168.50.11
     volumes:
       - ./captures:/captures
-    tty: true
+      - ./config/right.conf:/etc/ipsec.conf:ro
+      - ./config/ipsec.secrets:/etc/ipsec.secrets.template:ro
+    command: >
+      bash -c "cp /etc/ipsec.secrets.template /etc/ipsec.secrets &&
+               chmod 600 /etc/ipsec.secrets &&
+               ipsec start &&
+               sleep infinity"
 
 networks:
   vpnnet:
