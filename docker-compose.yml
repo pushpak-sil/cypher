@@ -11,13 +11,13 @@ services:
       vpnnet:
         ipv4_address: 192.168.50.10
     volumes:
-     - ./captures:/captures
-     # - ./config/left.conf:/etc/ipsec.conf:ro
-     - ./config/ipsec.secrets:/etc/ipsec.secrets.template:ro
+      - ./captures:/captures
+      - ./configs/ipsec.secrets:/etc/ipsec.secrets.template:ro
     command: >
-      bash -c "cp /etc/ipsec.secrets.template /etc/ipsec.secrets &&
+      bash -c "touch /etc/ipsec.conf &&
+               cp /etc/ipsec.secrets.template /etc/ipsec.secrets &&
                chmod 600 /etc/ipsec.secrets &&
-               ipsec start &&
+               ipsec start || true &&
                sleep infinity"
 
   vpn-right:
@@ -31,12 +31,15 @@ services:
         ipv4_address: 192.168.50.11
     volumes:
       - ./captures:/captures
-      #- ./config/right.conf:/etc/ipsec.conf:ro
-      - ./config/ipsec.secrets:/etc/ipsec.secrets.template:ro
+      - ./configs/ipsec.secrets:/etc/ipsec.secrets.template:ro
     command: >
-      bash -c "cp /etc/ipsec.secrets.template /etc/ipsec.secrets &&
+      bash -c "touch /etc/ipsec.conf &&
+               cp /etc/ipsec.secrets.template /etc/ipsec.secrets &&
                chmod 600 /etc/ipsec.secrets &&
-               ipsec start &&
+               ipsec start || true &&
+               mkdir -p /var/www && cd /var/www &&
+               echo 'SIH2026 VPN Test' > index.html &&
+               python3 -m http.server 8080 &
                sleep infinity"
 
 networks:

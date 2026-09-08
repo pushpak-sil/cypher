@@ -4,17 +4,13 @@ import os
 import subprocess
 import sys
 import time
-from jinja2 import Environment, FileSystemLoader
 
-# Set working directory to repository root
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(PROJECT_ROOT)
 
+# Locate traffic_gen from the scripts directory
 sys.path.append(os.path.join(PROJECT_ROOT, "scripts"))
 from traffic_gen import TRAFFIC_GENERATORS
-
-env = Environment(loader=FileSystemLoader("templates"))
-template = env.get_template("ipsec.conf.j2")
 
 CIPHER_PROFILES = {
     "aes128_cbc": {"esp": "aes128-sha256", "ike": "aes128-sha256"},
@@ -30,13 +26,43 @@ def build_proposals(cfg):
   )
   dh = cfg["dh_group"]
   cfg["ike_proposal"] = f"{base['ike']}-{dh}"
-  # strongSwan accepts 'aes256gcm16-modp2048' directly for AEAD with PFS
   cfg["esp_proposal"] = f"{base['esp']}-{dh}" if cfg.get("pfs") else base["esp"]
 
 
+def render_ipsec_conf(local_ip, local_id, remote_ip, remote_id, cfg):
+  """Replaces Jinja2 with a native multi-line Python f-string.
+
+  Guarantees exact strongSwan indentation and pure Unix LF line breaks.
+  """
+  lines = [
+      "config setup",
+      '    charondebug="ike 2, knl 2, cfg 2"',
+      "    uniqueids=no",
+      "",
+      "conn test-conn",
+      "    auto=add",
+      f"    type={cfg['mode']}",
+      f"    keyexchange={cfg['ikev']}",
+      "    authby=secret",
+      f"    left={local_ip}",
+      f"    leftid=@{local_id}",
+      f"    leftsubnet={local_ip}/32",
+      f"    right={remote_ip}",
+      f"    rightid=@{remote_id}",
+      f"    rightsubnet={remote_ip}/32",
+      f"    ike={cfg['ike_proposal']}!",
+      f"    esp={cfg['esp_proposal']}!",
+      f"    ikelifetime={cfg['keylife']}",
+      f"    lifetime={cfg['keylife']}",
+      "",
+  ]
+  return "\n".join(lines)
+
+
 def push_to_container(host, content):
+  """Injects configuration via Base64 stream to bypass file locks and mount errors."""
   b64_data = base64.b64encode(content.encode("utf-8")).decode("ascii")
-  res = subprocess.run(
+  subprocess.run(
       [
           "docker",
           "exec",
@@ -45,46 +71,40 @@ def push_to_container(host, content):
           "-c",
           f"echo {b64_data} | base64 -d > /etc/ipsec.conf",
       ],
-      capture_output=True,
-      text=True,
+      check=True,
   )
-  if res.returncode != 0:
-    print(f"[-] Failed to update config on {host}: {res.stderr.strip()}")
 
 
 def push_config(cfg):
   os.makedirs("configs/generated", exist_ok=True)
   build_proposals(cfg)
 
-  # Configure vpn-left (192.168.50.10)
-  left_cfg = dict(
-      cfg,
+  # Generate and push initiator configuration (vpn-left)
+  conf_left = render_ipsec_conf(
       local_ip="192.168.50.10",
       local_id="left",
       remote_ip="192.168.50.11",
       remote_id="right",
+      cfg=cfg,
   )
-  conf_left = template.render(**left_cfg)
   with open("configs/generated/left.conf", "w", newline="\n") as f:
-    f.write(conf_left + "\n")
-  push_to_container("vpn-left", conf_left + "\n")
+    f.write(conf_left)
+  push_to_container("vpn-left", conf_left)
 
-  # Configure vpn-right (192.168.50.11)
-  right_cfg = dict(
-      cfg,
+  # Generate and push responder configuration (vpn-right)
+  conf_right = render_ipsec_conf(
       local_ip="192.168.50.11",
       local_id="right",
       remote_ip="192.168.50.10",
       remote_id="left",
+      cfg=cfg,
   )
-  conf_right = template.render(**right_cfg)
   with open("configs/generated/right.conf", "w", newline="\n") as f:
-    f.write(conf_right + "\n")
-  push_to_container("vpn-right", conf_right + "\n")
+    f.write(conf_right)
+  push_to_container("vpn-right", conf_right)
 
 
 def reload_ipsec():
-  """Dynamically reloads configurations without stopping or restarting the charon daemon."""
   for host in ["vpn-left", "vpn-right"]:
     res = subprocess.run(
         ["docker", "exec", host, "ipsec", "reload"],
@@ -131,7 +151,6 @@ def stop_capture(host):
 
 
 def bring_up():
-  """Initiates the tunnel and returns output for diagnostic logging."""
   try:
     res = subprocess.run(
         ["docker", "exec", "vpn-left", "ipsec", "up", "test-conn"],
@@ -183,7 +202,6 @@ def run_all(matrix):
     push_config(cfg)
     reload_ipsec()
 
-    # Capture packets before initiating negotiation
     start_capture("vpn-left", pcap_container_path)
 
     up_output = bring_up()
@@ -197,8 +215,9 @@ def run_all(matrix):
         traffic_fn()
     else:
       print("  [!] WARNING: Tunnel failed to establish.")
-      # Display why the negotiation failed from ipsec up
-      err_lines = [line.strip() for line in up_output.splitlines() if line.strip()]
+      err_lines = [
+          line.strip() for line in up_output.splitlines() if line.strip()
+      ]
       for line in err_lines[-3:]:
         print(f"      {line}")
 
