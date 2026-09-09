@@ -3,6 +3,8 @@ captures/*.pcap
 manifest.json
 parsed_facts.json
 training_data.csv
+run_dashboard.py
+start_dashboard.bat
 
 # Python
 __pycache__/

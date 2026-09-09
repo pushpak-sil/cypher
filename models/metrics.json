@@ -1,0 +1,174 @@
+{
+  "model_name": "RandomForest + IsolationForest",
+  "architecture": {
+    "algorithm": "RandomForest Ensemble + IsolationForest",
+    "classifier_name": "RandomForest",
+    "anomaly_detector_name": "Isolation Forest",
+    "n_estimators": 100,
+    "max_depth": 12,
+    "criterion": "Gini Impurity",
+    "features_count": 13,
+    "training_samples": 816,
+    "normal_samples": 576,
+    "anomaly_samples": 240,
+    "validation_method": "5-Fold Stratified Cross-Validation + Outlier Benchmarks"
+  },
+  "total_samples": 816,
+  "overall_accuracy": 1.0,
+  "overall_f1": 1.0,
+  "cross_validation_results": {
+    "RandomForest": {
+      "accuracy_mean": 1.0,
+      "accuracy_std": 0.0,
+      "f1_mean": 1.0,
+      "f1_std": 0.0
+    },
+    "ExtraTrees": {
+      "accuracy_mean": 1.0,
+      "accuracy_std": 0.0,
+      "f1_mean": 1.0,
+      "f1_std": 0.0
+    },
+    "GradientBoosting": {
+      "accuracy_mean": 0.9983,
+      "accuracy_std": 0.0035,
+      "f1_mean": 0.9982,
+      "f1_std": 0.0035
+    }
+  },
+  "anomaly_metrics": {
+    "detection_rate": 0.5417,
+    "false_alarm_rate": 0.0503,
+    "threat_categories_tested": [
+      "exfiltration",
+      "portscan",
+      "c2_beacon",
+      "dos_flood"
+    ]
+  },
+  "class_names": [
+    "icmp",
+    "video",
+    "voip",
+    "web"
+  ],
+  "confusion_matrix": [
+    [
+      78,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      278,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      205,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      15
+    ]
+  ],
+  "per_class_report": {
+    "icmp": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 78.0
+    },
+    "video": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 278.0
+    },
+    "voip": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 205.0
+    },
+    "web": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 15.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 576.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 576.0
+    }
+  },
+  "feature_importance": [
+    {
+      "feature": "iat_mean",
+      "importance": 0.2005
+    },
+    {
+      "feature": "bytes_per_sec",
+      "importance": 0.1882
+    },
+    {
+      "feature": "size_std",
+      "importance": 0.1093
+    },
+    {
+      "feature": "burstiness",
+      "importance": 0.1032
+    },
+    {
+      "feature": "size_max",
+      "importance": 0.1003
+    },
+    {
+      "feature": "size_p75",
+      "importance": 0.0922
+    },
+    {
+      "feature": "direction_ratio",
+      "importance": 0.0551
+    },
+    {
+      "feature": "size_mean",
+      "importance": 0.041
+    },
+    {
+      "feature": "pkt_count",
+      "importance": 0.0383
+    },
+    {
+      "feature": "iat_std",
+      "importance": 0.0379
+    },
+    {
+      "feature": "size_p25",
+      "importance": 0.0184
+    },
+    {
+      "feature": "size_min",
+      "importance": 0.0105
+    },
+    {
+      "feature": "duration",
+      "importance": 0.005
+    }
+  ]
+}

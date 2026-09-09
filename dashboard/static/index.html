@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYFER // IPsec Protocol Analyzer & Security Framework</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-shell">
+        <!-- Persistent Cyber SOC Sidebar -->
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                <div class="shield-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-title">Syfer</span>
+                    <span class="brand-tag">VPN ANALYZER</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-view="view-guide" id="nav-btn-guide">
+                    <span class="nav-item-content">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <span>Guide</span>
+                    </span>
+                    <span class="nav-dot"></span>
+                </button>
+
+                <button class="nav-item" data-view="view-dashboard" id="nav-btn-dashboard">
+                    <span class="nav-item-content">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <span>Dashboard</span>
+                    </span>
+                    <span class="nav-dot"></span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-status-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    <span>System Status</span>
+                </div>
+                <div class="sidebar-status-val">
+                    <span class="status-dot"></span>
+                    <span id="sidebar-status-text">System Operational</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Viewport Area -->
+        <div class="main-viewport">
+            <!-- VIEW 1: Interactive Guide (Default Active View) -->
+            <section id="view-guide" class="app-view active">
+                <div class="guide-container">
+                    <!-- Hero Group -->
+                    <div class="guide-hero-group">
+                        <div class="guide-brand-banner">
+                            <div class="guide-hero-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2.5">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    <path d="m9 12 2 2 4-4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="guide-hero-title"><span class="text-cyan">Sy</span>fer</h1>
+                                <p class="guide-hero-subtitle">AI-Powered IPsec VPN Protocol Analyzer</p>
+                            </div>
+                        </div>
+
+                        <div class="glass-card guide-intro-card">
+                            <p>Syfer captures live IPsec VPN traffic, identifies how each tunnel is configured — which cipher, DH group, authentication method, and whether Perfect Forward Secrecy is enabled — then uses a machine learning model to infer the type of traffic hidden inside the encrypted tunnel (voice, video, web, email) from side-channel signals like packet sizes and timing. Every session gets a security risk score so analysts can instantly spot weak configurations and prioritize remediation.</p>
+                        </div>
+                    </div>
+
+                    <!-- How the Pipeline Works -->
+                    <div class="guide-section">
+                        <div class="guide-section-header">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                                <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                                <rect x="9" y="9" width="6" height="6"></rect>
+                                <line x1="9" y1="1" x2="9" y2="4"></line>
+                                <line x1="15" y1="1" x2="15" y2="4"></line>
+                                <line x1="9" y1="20" x2="9" y2="23"></line>
+                                <line x1="15" y1="20" x2="15" y2="23"></line>
+                                <line x1="20" y1="9" x2="23" y2="9"></line>
+                                <line x1="20" y1="14" x2="23" y2="14"></line>
+                                <line x1="1" y1="9" x2="4" y2="9"></line>
+                                <line x1="1" y1="14" x2="4" y2="14"></line>
+                            </svg>
+                            <h2>How the Pipeline Works</h2>
+                        </div>
+
+                        <div class="pipeline-grid">
+                            <!-- Step 1 -->
+                            <div class="pipeline-step-wrap">
+                                <div class="glass-card pipeline-card">
+                                    <div class="step-icon-box">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                                            <circle cx="12" cy="12" r="2"></circle>
+                                            <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="step-badge">STEP 1</div>
+                                    <h3>Capture</h3>
+                                    <p>Intercept IPsec VPN traffic from the network — IKE handshakes and ESP packets.</p>
+                                </div>
+                                <div class="step-arrow">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Step 2 -->
+                            <div class="pipeline-step-wrap">
+                                <div class="glass-card pipeline-card">
+                                    <div class="step-icon-box">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                    </div>
+                                    <div class="step-badge">STEP 2</div>
+                                    <h3>Protocol Identification</h3>
+                                    <p>Parse IKE metadata to extract cipher suites, DH groups, PFS, key lifetimes, and auth method.</p>
+                                </div>
+                                <div class="step-arrow">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Step 3 -->
+                            <div class="pipeline-step-wrap">
+                                <div class="glass-card pipeline-card">
+                                    <div class="step-icon-box">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                                            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"></path>
+                                            <line x1="9" y1="21" x2="15" y2="21"></line>
+                                        </svg>
+                                    </div>
+                                    <div class="step-badge">STEP 3</div>
+                                    <h3>Traffic Classification</h3>
+                                    <p>ML model infers what type of traffic is inside the encrypted tunnel from side-channel signals.</p>
+                                </div>
+                                <div class="step-arrow">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Step 4 -->
+                            <div class="pipeline-step-wrap">
+                                <div class="glass-card pipeline-card">
+                                    <div class="step-icon-box">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                                        </svg>
+                                    </div>
+                                    <div class="step-badge">STEP 4</div>
+                                    <h3>Security Scoring</h3>
+                                    <p>Score each session's security posture on a 0–100 scale based on its configuration.</p>
+                                </div>
+                                <div class="step-arrow">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Step 5 -->
+                            <div class="pipeline-step-wrap">
+                                <div class="glass-card pipeline-card">
+                                    <div class="step-icon-box">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                                            <polyline points="10 9 9 9 8 9"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="step-badge">STEP 5</div>
+                                    <h3>Report</h3>
+                                    <p>Generate executive and technical reports with actionable remediation guidance.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Distinction Callout -->
+                    <div class="guide-section">
+                        <div class="glass-card distinction-card">
+                            <div class="distinction-header">
+                                <div class="distinction-icon-box">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <span class="distinction-title">IMPORTANT DISTINCTION: PARSED DATA VS. ML INFERENCE</span>
+                                </div>
+                            </div>
+                            <div class="distinction-grid">
+                                <div class="distinction-box">
+                                    <div class="distinction-box-title">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                        <span>PARSED FROM IKE (NOT AI)</span>
+                                    </div>
+                                    <p>Cipher suite, DH group, PFS status, key lifetime, auth method, and IP version are extracted directly from IKE handshake packets — these are plaintext protocol parameters, <strong>not AI predictions</strong>.</p>
+                                </div>
+
+                                <div class="distinction-box">
+                                    <div class="distinction-box-title">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                                            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                                            <rect x="9" y="9" width="6" height="6"></rect>
+                                            <line x1="9" y1="1" x2="9" y2="4"></line>
+                                            <line x1="15" y1="1" x2="15" y2="4"></line>
+                                            <line x1="9" y1="20" x2="9" y2="23"></line>
+                                            <line x1="15" y1="20" x2="15" y2="23"></line>
+                                        </svg>
+                                        <span>ML-INFERRED (AI PREDICTION)</span>
+                                    </div>
+                                    <p>The <strong>predicted traffic type</strong> (VoIP, web, video, etc.) is the genuine ML inference — the model analyzes packet sizes, timing, and flow patterns to classify what's inside the encrypted tunnel.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metric Glossary -->
+                    <div class="guide-section">
+                        <div class="guide-section-header">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <h2>Metric Glossary</h2>
+                        </div>
+
+                        <div class="glossary-grid">
+                            <!-- 1 -->
+                            <div class="glass-card glossary-card">
+                                <h3 class="glossary-term">Risk Score (0–100)</h3>
+                                <p class="glossary-def">A composite score reflecting the overall strength of a VPN session's cryptographic configuration. Higher is better.</p>
+                                <p class="glossary-why"><strong>Why it matters:</strong> Instantly tells you whether a tunnel is well-configured or dangerously weak — without reading every parameter yourself.</p>
+                            </div>
+
+                            <!-- 2 -->
+                            <div class="glass-card glossary-card">
+                                <h3 class="glossary-term">Threat Matrix</h3>
+                                <p class="glossary-def">Per-category risk assessment across four dimensions: Cryptographic Strength, Key Management, Replay Protection, and Metadata Exposure. Each rated Low / Medium / High.</p>
+                                <p class="glossary-why"><strong>Why it matters:</strong> Pinpoints exactly which aspect of a session's security is weak, so remediation can be targeted.</p>
+                            </div>
+
+                            <!-- 3 -->
+                            <div class="glass-card glossary-card">
+                                <h3 class="glossary-term">AI Confidence Score</h3>
+                                <p class="glossary-def">How confident the ML model is in its traffic-type prediction, expressed as a percentage (0–100%).</p>
+                                <p class="glossary-why"><strong>Why it matters:</strong> Low confidence means the model isn't sure — the analyst should treat that prediction with skepticism.</p>
+                            </div>
+
+                            <!-- 4 -->
+                            <div class="glass-card glossary-card">
+                                <h3 class="glossary-term">Cipher</h3>
+                                <p class="glossary-def">The encryption algorithm used to protect tunnel traffic (e.g., AES-256-GCM, 3DES-CBC).</p>
+                                <p class="glossary-why"><strong>Why it matters:</strong> Weak ciphers like 3DES are vulnerable to brute-force attacks — modern tunnels should use AES-256-GCM or ChaCha20.</p>
+                            </div>
+
+                            <!-- 5 -->
+                            <div class="glass-card glossary-card">
+                                <h3 class="glossary-term">DH Group</h3>
+                                <p class="glossary-def">The Diffie-Hellman group used for key exchange. Higher groups use longer keys or elliptic curves.</p>
+                                <p class="glossary-why"><strong>Why it matters:</strong> A weak DH group (e.g., Group 2 — 1024-bit) can be cracked, compromising the entire session.</p>
+                            </div>
+
+                            <!-- 6 -->
+                            <div class="glass-card glossary-card">
+                                <h3 class="glossary-term">Perfect Forward Secrecy (PFS)</h3>
+                                <p class="glossary-def">When enabled, each session uses a unique key — compromising one key doesn't reveal past or future traffic.</p>
+                                <p class="glossary-why"><strong>Why it matters:</strong> Without PFS, a single key compromise can decrypt all historical traffic.</p>
+                            </div>
+
+                            <!-- 7 -->
+                            <div class="glass-card glossary-card">
+                                <h3 class="glossary-term">Key Lifetime</h3>
+                                <p class="glossary-def">How long a session key is valid before renegotiation (in seconds).</p>
+                                <p class="glossary-why"><strong>Why it matters:</strong> Shorter lifetimes limit exposure if a key is compromised. Lifetimes over 12 hours are considered risky.</p>
+                            </div>
+
+                            <!-- 8 -->
+                            <div class="glass-card glossary-card">
+                                <h3 class="glossary-term">Predicted Traffic Type</h3>
+                                <p class="glossary-def">What the ML model thinks is running inside the encrypted tunnel — VoIP, web browsing, video, email, ICMP, or file transfer.</p>
+                                <p class="glossary-why"><strong>Why it matters:</strong> Knowing the traffic type helps assess whether the tunnel's security level is appropriate for the data it carries.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive CTA -->
+                    <div class="guide-cta-container">
+                        <button id="btn-guide-goto-dashboard" class="btn-guide-dashboard">
+                            <span>View Dashboard</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </button>
+                        <p class="guide-cta-sub">Start analyzing VPN session security &rarr;</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: Complete Dashboard (Existing Interface Intact) -->
+            <div id="view-dashboard" class="app-view">
+                <!-- Top Header -->
+                <header class="top-nav">
+                    <div class="logo-group">
+                        <div class="shield-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="brand-title">SYFER</span>
+                            <span class="brand-subtitle">IPsec VPN Protocol Analyzer & Security Framework</span>
+                        </div>
+                    </div>
+                    <div class="nav-actions">
+                        <div class="file-inputs">
+                            <label for="pcap-upload" class="btn btn-outline">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                Upload PCAP
+                            </label>
+                            <input type="file" id="pcap-upload" accept=".pcap,.pcapng,.cap" style="display:none;">
+
+                            <select id="run-select" class="run-dropdown">
+                                <option value="">Select Testbed Run (000 - 099)...</option>
+                            </select>
+                        </div>
+                        <div class="report-btns">
+                            <button id="btn-export-exec" class="btn btn-primary" title="Export Executive Summary">Executive Report</button>
+                            <button id="btn-export-tech" class="btn btn-secondary" title="Export Technical Deep Dive">Technical Report</button>
+                        </div>
+                    </div>
+                </header>
+
+    <!-- Main Container -->
+    <main class="main-layout">
+        <!-- Target Info Strip -->
+        <div class="target-strip">
+            <div class="target-info">
+                <span class="label">ACTIVE CAPTURE TRACE:</span>
+                <span id="active-pcap-name" class="val-mono">Loading trace...</span>
+            </div>
+            <div class="target-metrics">
+                <span>Total Packets: <strong id="val-total-pkts">0</strong></span>
+                <span>IKE Messages: <strong id="val-ike-pkts">0</strong></span>
+                <span>ESP Packets: <strong id="val-esp-pkts">0</strong></span>
+                <span>AH Packets: <strong id="val-ah-pkts">0</strong></span>
+            </div>
+        </div>
+
+        <!-- Executive KPI Ribbon -->
+        <section class="kpi-ribbon">
+            <!-- Security Score Gauge -->
+            <div class="kpi-card score-card">
+                <div class="kpi-header">
+                    <span>SECURITY RISK SCORE</span>
+                    <span id="score-badge" class="badge">--</span>
+                </div>
+                <div class="gauge-wrapper">
+                    <svg viewBox="0 0 120 120" class="gauge-svg">
+                        <circle cx="60" cy="60" r="50" class="gauge-bg" />
+                        <circle cx="60" cy="60" r="50" id="gauge-progress" class="gauge-bar" />
+                    </svg>
+                    <div class="gauge-text">
+                        <span id="kpi-score-num">--</span>
+                        <small>/ 100</small>
+                    </div>
+                </div>
+                <div id="kpi-posture-label" class="posture-label">Analyzing...</div>
+            </div>
+
+            <!-- Protocol & Mode -->
+            <div class="kpi-card">
+                <div class="kpi-header">PROTOCOL & MODE</div>
+                <div class="kpi-hero-val" id="kpi-protocol">--</div>
+                <div class="kpi-meta">
+                    <div>Mode: <strong id="kpi-mode">--</strong></div>
+                    <div>Encapsulation: <span id="kpi-encap" class="text-muted">Transport / Tunnel</span></div>
+                </div>
+            </div>
+
+            <!-- Cryptographic Transform -->
+            <div class="kpi-card">
+                <div class="kpi-header">CIPHER & KEY EXCHANGE</div>
+                <div class="kpi-hero-val text-cyan" id="kpi-cipher">--</div>
+                <div class="kpi-meta">
+                    <div>DH Group: <strong id="kpi-dh">--</strong></div>
+                    <div>PFS: <span id="kpi-pfs" class="badge-sm">--</span></div>
+                </div>
+            </div>
+
+            <!-- Traffic Classification & Anomaly Detection -->
+            <div class="kpi-card ai-kpi-card">
+                <div class="kpi-header">
+                    <span>TRAFFIC CLASSIFICATION</span>
+                    <span class="badge-sm" id="kpi-anomaly-badge">NORMAL</span>
+                </div>
+                <div class="kpi-hero-val text-emerald" id="kpi-ai-pred">--</div>
+                <div class="kpi-meta">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>Confidence: <strong id="kpi-ai-conf" class="text-cyan">--%</strong></span>
+                        <span>Anomaly Risk: <strong id="kpi-anomaly-score" class="text-emerald">--%</strong></span>
+                    </div>
+                    <div class="text-muted" id="kpi-anomaly-verdict" style="font-size: 11px; margin-top: 2px;">Inferred from encrypted packet flow cadence</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <nav class="tabs-nav">
+            <button class="tab-btn active" data-tab="tab-dissection">Protocol Dissection & IKE Sequence</button>
+            <button class="tab-btn" data-tab="tab-ai">AI Traffic Inference</button>
+            <button class="tab-btn" data-tab="tab-security">Security Audit & Threat Matrix</button>
+            <button class="tab-btn" data-tab="tab-waterfall">ESP Packet Flow Waterfall</button>
+            <button class="tab-btn" data-tab="tab-model">AI Model Telemetry</button>
+        </nav>
+
+        <!-- Tab 1: Protocol Dissection & IKE Sequence -->
+        <section id="tab-dissection" class="tab-content active">
+            <div class="two-col-grid">
+                <!-- IKE Message Ladder -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>IKE Handshake Sequence Ladder</h3>
+                        <span class="badge-sm">UDP 500 / 4500</span>
+                    </div>
+                    <div id="ike-ladder-container" class="ladder-container">
+                        <div class="empty-state">No IKE handshake messages captured in this trace.</div>
+                    </div>
+                </div>
+
+                <!-- Decoded SA Proposals & Transforms -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Security Association Proposals & Transforms</h3>
+                        <span class="badge-sm">Wire Decode</span>
+                    </div>
+                    <div id="sa-proposals-tree" class="proposals-tree">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 2: AI Traffic Inference -->
+        <section id="tab-ai" class="tab-content">
+            <div class="two-col-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Traffic Class Probabilities</h3>
+                        <span class="badge-sm">Multinomial Distribution</span>
+                    </div>
+                    <div class="chart-container" style="height: 280px;">
+                        <canvas id="chart-probabilities"></canvas>
+                    </div>
+                    <div class="explanation-box">
+                        <h4>AI Reasoning Narrative:</h4>
+                        <p id="ai-narrative">Statistical flow explanation will appear here...</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Flow Statistical Radar Profile</h3>
+                        <span class="badge-sm">Normalized Cadence</span>
+                    </div>
+                    <div class="chart-container" style="height: 280px;">
+                        <canvas id="chart-flow-radar"></canvas>
+                    </div>
+                    <div class="features-table-wrapper">
+                        <table class="data-table" id="table-features">
+                            <thead>
+                                <tr><th>Metric</th><th>Observed Value</th><th>Unit</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 3: Security Audit & Threat Matrix -->
+        <section id="tab-security" class="tab-content">
+            <!-- Compliance Cards -->
+            <div class="compliance-grid" id="compliance-container">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Threat Matrix Table -->
+            <div class="card mt-20">
+                <div class="card-header">
+                    <h3>Enterprise Threat Matrix</h3>
+                    <div class="threat-filters">
+                        <span class="filter-pill active" data-filter="ALL">All Threats</span>
+                        <span class="filter-pill" data-filter="CRITICAL">Critical</span>
+                        <span class="filter-pill" data-filter="HIGH">High</span>
+                        <span class="filter-pill" data-filter="MEDIUM">Medium</span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="table-threat-matrix">
+                        <thead>
+                            <tr>
+                                <th>Severity</th>
+                                <th>Vulnerability</th>
+                                <th>Standard / CVE</th>
+                                <th>Impact Analysis</th>
+                                <th>Actionable Remediation</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Hardening Configurations -->
+            <div class="card mt-20">
+                <div class="card-header">
+                    <h3>Automated Configuration Hardening Templates</h3>
+                    <div class="config-tabs">
+                        <button class="cfg-btn active" data-cfg="strongswan">strongSwan (ipsec.conf)</button>
+                        <button class="cfg-btn" data-cfg="cisco">Cisco IOS / ASA</button>
+                    </div>
+                </div>
+                <div class="code-preview-wrapper">
+                    <button class="copy-btn" id="btn-copy-cfg">Copy Configuration</button>
+                    <pre><code id="code-remediation">Loading hardened template...</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 4: ESP Packet Flow Waterfall -->
+        <section id="tab-waterfall" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>ESP Packet Inspection & Replay Protection State</h3>
+                    <div id="replay-badge" class="badge-sm">Replay Protection OK</div>
+                </div>
+                <div class="table-responsive" style="max-height: 520px; overflow-y:auto;">
+                    <table class="data-table" id="table-esp-waterfall">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Timestamp</th>
+                                <th>Direction (Src &rarr; Dst)</th>
+                                <th>SPI (Hex)</th>
+                                <th>Sequence Number</th>
+                                <th>Packet Size</th>
+                                <th>Payload Size</th>
+                                <th>Delta (ms)</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 5: AI Model Telemetry -->
+        <section id="tab-model" class="tab-content">
+            <!-- Active Trace Live Operational Telemetry Ribbon -->
+            <div class="telemetry-live-ribbon mb-20">
+                <div class="tel-metric-card">
+                    <div class="tel-metric-label">ACTIVE TRACE INFERRED</div>
+                    <div class="tel-metric-hero" id="tel-active-trace">--</div>
+                    <div class="tel-metric-sub" id="tel-active-packets">Evaluating flow...</div>
+                </div>
+                <div class="tel-metric-card">
+                    <div class="tel-metric-label">INFERENCE LATENCY</div>
+                    <div class="tel-metric-hero text-cyan" id="tel-latency">-- ms</div>
+                    <div class="tel-metric-sub">Random Forest Decision Path</div>
+                </div>
+                <div class="tel-metric-card">
+                    <div class="tel-metric-label">FLOW CADENCE PROFILE</div>
+                    <div class="tel-metric-hero text-emerald" id="tel-cadence">--</div>
+                    <div class="tel-metric-sub" id="tel-rate">-- KB/s Throughput</div>
+                </div>
+                <div class="tel-metric-card">
+                    <div class="tel-metric-label">PREDICTED CLASS & CONFIDENCE</div>
+                    <div class="tel-metric-hero text-purple" id="tel-pred-conf">--</div>
+                    <div class="tel-metric-sub" id="tel-pred-sub">Multinomial Probability</div>
+                </div>
+            </div>
+
+            <!-- Two Column Operational & Architecture Breakdown -->
+            <div class="two-col-grid">
+                <!-- Left: Model Architecture & Cross-Validation Benchmarks -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Model Architecture & Performance</h3>
+                        <span class="badge-sm" id="telemetry-model-name">Random Forest Ensemble</span>
+                    </div>
+
+                    <!-- Architecture Specs Grid -->
+                    <div class="arch-specs-grid mt-15" id="arch-specs-grid">
+                        <div class="spec-pill"><span>Algorithm:</span> <strong>Random Forest</strong></div>
+                        <div class="spec-pill"><span>Estimators:</span> <strong>100 Decision Trees</strong></div>
+                        <div class="spec-pill"><span>Max Depth:</span> <strong>12 Levels</strong></div>
+                        <div class="spec-pill"><span>Criterion:</span> <strong>Gini Impurity</strong></div>
+                        <div class="spec-pill"><span>Feature Dimensions:</span> <strong>13 Flow Metrics</strong></div>
+                        <div class="spec-pill"><span>Training Corpus:</span> <strong>75 Established ESP Flows</strong></div>
+                    </div>
+
+                    <!-- Global Validation KPIs -->
+                    <div class="kpi-grid-mini mt-15" id="telemetry-kpis">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- Cross-Validation Comparison Table -->
+                    <h4 style="margin: 20px 0 10px 0; font-size: 13px; color:#94a3b8;">Cross-Validation Model Comparison (5-Fold Stratified)</h4>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-cv-comparison">
+                            <thead>
+                                <tr><th>Algorithm</th><th>CV Accuracy</th><th>Weighted F1</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Per-Class Performance Table -->
+                    <h4 style="margin: 20px 0 10px 0; font-size: 13px; color:#94a3b8;">Per-Class Generalization Metrics</h4>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-class-report">
+                            <thead>
+                                <tr><th>Traffic Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right: Active Flow Feature Attribution & Global Feature Ranking -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Active Flow Feature Attribution</h3>
+                            <div class="card-subtitle" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                Local feature influence driving the current trace's classification (<span id="tel-feature-flow-label" class="text-cyan">--</span>)
+                            </div>
+                        </div>
+                        <span class="badge-sm" style="color:var(--cyan); border-color:rgba(6,182,212,0.3);">Live Attribution</span>
+                    </div>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="chart-local-importance"></canvas>
+                    </div>
+
+                    <div class="card-header mt-20" style="padding-top: 15px; border-top: 1px solid var(--border-color);">
+                        <div>
+                            <h3>Global Feature Importance Ranking</h3>
+                            <div class="card-subtitle" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                Mean Gini impurity reduction across all 100 decision trees
+                            </div>
+                        </div>
+                        <span class="badge-sm">Gini Importance</span>
+                    </div>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="chart-feature-importance"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+            </div> <!-- /view-dashboard -->
+        </div> <!-- /main-viewport -->
+    </div> <!-- /app-shell -->
+
+    <!-- Interactive Report Viewer Modal -->
+    <div id="report-modal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <span class="pulse-dot"></span>
+                    <h3 id="modal-report-title">SYFER // Assessment Report</h3>
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-modal-print" class="btn btn-outline" title="Print or save as PDF">
+                        &#128438; Print / Save PDF
+                    </button>
+                    <button id="btn-modal-tab" class="btn btn-secondary" title="Open full screen in a new browser tab">
+                        &#8599; Open in New Tab
+                    </button>
+                    <button id="btn-modal-close" class="btn btn-close" title="Return to Dashboard">
+                        &larr; Back to Dashboard
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <iframe id="report-frame" src="about:blank" title="Security Report View"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Analysis Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner-box">
+            <div class="cyber-spinner"></div>
+            <div class="spinner-title">ANALYZING IPSEC TRAFFIC</div>
+            <div id="loading-status-text" class="spinner-subtitle">Dissecting IKEv1/IKEv2 handshakes and extracting ESP flow metrics...</div>
+        </div>
+    </div>
+
+    <!-- App JS -->
+    <script src="app.js"></script>
+</body>
+</html>

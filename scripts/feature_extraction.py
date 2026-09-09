@@ -41,3 +41,65 @@ def extract_features(esp_packets, local_ip="192.168.50.10"):
         "burstiness":      round(float(iats.std() / (iats.mean() + 1e-6)), 3),
         "direction_ratio": round(float(direction_ratio), 3),
     }
+
+
+def extract_windowed_features(esp_packets, window_sec=3.0, step_sec=1.5, min_packets=5, local_ip="192.168.50.10"):
+    """
+    Slices esp_packets into overlapping time windows of `window_sec` seconds
+    advancing by `step_sec` seconds.
+    If the entire capture has >= min_packets but total duration < window_sec (e.g. short ping/burst),
+    returns the whole flow as a single slice.
+    """
+    if not esp_packets or len(esp_packets) < min_packets:
+        return []
+
+    # Sort packets chronologically
+    sorted_pkts = sorted(esp_packets, key=lambda p: float(p.time))
+    t0 = float(sorted_pkts[0].time)
+    t_end = float(sorted_pkts[-1].time)
+    total_duration = t_end - t0
+
+    # Short flow fallback: return full flow as one window
+    if total_duration < window_sec:
+        feat = extract_features(sorted_pkts, local_ip=local_ip)
+        if feat:
+            feat["window_idx"] = 0
+            feat["window_start"] = 0.0
+            feat["window_end"] = round(total_duration, 2)
+            return [feat]
+        return []
+
+    # Sliding window extraction
+    windows = []
+    w_start = 0.0
+    w_idx = 0
+
+    while w_start < total_duration:
+        w_end = w_start + window_sec
+        # Select packets falling inside [t0 + w_start, t0 + w_end]
+        window_pkts = [
+            p for p in sorted_pkts
+            if (t0 + w_start) <= float(p.time) <= (t0 + w_end)
+        ]
+
+        if len(window_pkts) >= min_packets:
+            feat = extract_features(window_pkts, local_ip=local_ip)
+            if feat:
+                feat["window_idx"] = w_idx
+                feat["window_start"] = round(w_start, 2)
+                feat["window_end"] = round(w_end, 2)
+                windows.append(feat)
+                w_idx += 1
+
+        w_start += step_sec
+
+    # If windows empty despite enough packets (e.g., uneven spacing), fallback to whole flow
+    if not windows:
+        feat = extract_features(sorted_pkts, local_ip=local_ip)
+        if feat:
+            feat["window_idx"] = 0
+            feat["window_start"] = 0.0
+            feat["window_end"] = round(total_duration, 2)
+            windows.append(feat)
+
+    return windows
