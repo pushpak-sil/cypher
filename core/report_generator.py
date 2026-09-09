@@ -23,6 +23,10 @@ def generate_executive_report_html(data: Dict[str, Any]) -> str:
     threats = sec.get("threat_matrix", [])
     compliance = sec.get("compliance", {})
 
+    ike_version = crypto.get("ike_version", "Unknown")
+    mode_raw = str(crypto.get("mode", "Not Observed"))
+    mode_disp = mode_raw.capitalize() if mode_raw.lower() in ("tunnel", "transport") else mode_raw
+
     threat_rows = ""
     for t in threats:
         sev = t.get("severity", "MEDIUM")
@@ -38,6 +42,31 @@ def generate_executive_report_html(data: Dict[str, Any]) -> str:
 
     if not threat_rows:
         threat_rows = "<tr><td colspan='4' style='padding:15px; text-align:center; color:#10b981;'>No critical vulnerabilities identified. Configuration conforms to baseline security standards.</td></tr>"
+
+    # Findings-driven strategic recommendation. Previously this was static boilerplate
+    # that told every reader to decommission IKEv1 and enable PFS -- even on a clean
+    # IKEv2/AES-256 tunnel -- contradicting the assessment. Build it from real threats.
+    threat_ids = {t.get("id") for t in threats}
+    _rec_map = [
+        ("THREAT-IKEV1", "migrate remaining IKEv1 gateways to IKEv2"),
+        ("THREAT-SWEET32", "replace 64-bit block ciphers (3DES/DES) with AES-256-GCM"),
+        ("THREAT-NULL-CIPHER", "mandate AES-256-GCM encryption (NULL cipher provides zero confidentiality)"),
+        ("THREAT-MD5-BROKEN", "replace MD5 integrity with HMAC-SHA-256 or an AEAD cipher"),
+        ("THREAT-SHA1-WEAK", "upgrade SHA-1 integrity to SHA-256"),
+        ("THREAT-LOGJAM-DH", "eliminate Diffie-Hellman groups below 2048 bits (use Group 14/19/31)"),
+        ("THREAT-NO-PFS", "enable Perfect Forward Secrecy on Phase-2 / Child SA proposals"),
+        ("THREAT-REPLAY-ANOMALY", "verify the anti-replay window and enable Extended Sequence Numbers (ESN)"),
+    ]
+    recs = [text for tid, text in _rec_map if tid in threat_ids]
+    if recs:
+        rec_text = "Priority remediation &mdash; " + "; ".join(recs) + "."
+    else:
+        rec_text = (
+            f"The observable IKE (phase-1) parameters conform to current best practice (score {score}/100). "
+            "Maintain this baseline with regular re-keying. Note that the encapsulation mode, the ESP data "
+            "cipher, and Perfect Forward Secrecy are negotiated in the encrypted phase-2 exchange and cannot "
+            "be confirmed from a passive capture &mdash; validate them directly against the VPN gateway configuration."
+        )
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -97,11 +126,12 @@ def generate_executive_report_html(data: Dict[str, Any]) -> str:
 
         <div class="grid">
             <div class="kpi">
-                <div class="kpi-title">Protocol & Mode</div>
-                <div class="kpi-value">{crypto.get('ike_version')} ({crypto.get('mode', 'tunnel').upper()} Mode)</div>
+                <div class="kpi-title">Protocol & Encap Mode</div>
+                <div class="kpi-value">{ike_version}</div>
+                <div style="font-size:11.5px; margin-top:4px; color:#94a3b8;">Encap Mode: {mode_disp}</div>
             </div>
             <div class="kpi">
-                <div class="kpi-title">Cipher Suite</div>
+                <div class="kpi-title">IKE Cipher (Phase-1)</div>
                 <div class="kpi-value">{crypto.get('cipher')}</div>
             </div>
             <div class="kpi">
@@ -151,7 +181,7 @@ def generate_executive_report_html(data: Dict[str, Any]) -> str:
         <div class="actions-box">
             <h4 style="margin:0 0 6px 0; color:#38bdf8;">Strategic Security Recommendation</h4>
             <p style="margin:0; font-size:13px; line-height:1.5; color:#cbd5e1;">
-                Enforce modern authenticated encryption (AES-256-GCM), eliminate legacy Diffie-Hellman groups below 2048 bits, mandate Perfect Forward Secrecy (PFS), and decommission any remaining IKEv1 gateways to meet zero-trust enterprise compliance.
+                {rec_text}
             </p>
         </div>
     </div>
@@ -173,6 +203,57 @@ def generate_technical_report_html(data: Dict[str, Any]) -> str:
     esp = data.get("esp_analysis", {})
     ike_handshake = data.get("ike_handshake", [])
     remediations = sec.get("remediations", {})
+    informational = sec.get("informational", [])
+
+    cipher_val = str(crypto.get("cipher", "Unknown"))
+
+    def _integrity_eval(algo):
+        a = str(algo).upper()
+        if "MD5" in a:
+            return "Broken -- practical collision attacks (non-compliant)"
+        if "SHA1" in a or "SHA-1" in a:
+            return "Deprecated SHA-1 (SLOTH) -- upgrade advised"
+        if "384" in a or "512" in a:
+            return "Strong SHA-2 -- CNSA-grade"
+        if "256" in a or "SHA2" in a:
+            return "SHA-256 -- Standard Compliant"
+        if "GCM" in cipher_val.upper():
+            return "AEAD-integrated integrity (GCM)"
+        return "Not identified from capture"
+
+    pfs_status = crypto.get("pfs_status", "Enabled" if crypto.get("pfs_enabled") else "Not Observed")
+    pfs_wire = {
+        "Enabled": "Enabled (fresh DH in CHILD_SA)",
+        "Disabled": "Disabled (rekey without fresh DH)",
+    }.get(pfs_status, "Not Observed (no rekey captured)")
+    pfs_eval = {
+        "Enabled": "Protects past sessions",
+        "Disabled": "High compromise exposure",
+    }.get(pfs_status, "Not determinable from passive capture")
+
+    mode_raw = str(crypto.get("mode", "Not Observed"))
+    mode_disp = mode_raw.capitalize() if mode_raw.lower() in ("tunnel", "transport") else mode_raw
+    mode_eval = ("Inner IP headers encrypted" if mode_raw.lower() == "tunnel"
+                 else "Only payload encrypted" if mode_raw.lower() == "transport"
+                 else "Negotiated in encrypted phase-2 -- not observable passively")
+    esp_cipher = crypto.get("esp_cipher", "Not Observed")
+
+    # Observability caveats box: honestly document which parameters cannot be
+    # read from a passive capture. Empty -> box omitted.
+    if informational:
+        _items = "".join(
+            f"<li style='margin-bottom:6px;'><strong style='color:#cbd5e1;'>{n.get('title','Note')}:</strong> "
+            f"<span style='color:#94a3b8;'>{n.get('detail','')}</span></li>"
+            for n in informational
+        )
+        caveats_html = f"""
+        <div style="background:rgba(245,158,11,0.06); border-left:4px solid #f59e0b; padding:14px 16px; border-radius:4px; margin-top:14px;">
+            <div style="font-size:12px; font-weight:700; color:#f59e0b; text-transform:uppercase; letter-spacing:0.05em;">Observability &amp; Assessment Caveats</div>
+            <ul style="margin:8px 0 0 0; padding-left:18px; font-size:12px; line-height:1.5;">{_items}</ul>
+        </div>
+        """
+    else:
+        caveats_html = ""
 
     ike_rows = ""
     for m in ike_handshake:
@@ -233,15 +314,18 @@ def generate_technical_report_html(data: Dict[str, Any]) -> str:
         <p style="color:#94a3b8; font-size:13px; margin:0 0 25px 0;">Automated Deep Packet Dissection, Cryptographic Assessment & ML Inference</p>
 
         <div class="section-title">1. Dissected Security Association Parameters</div>
+        <p style="font-size:11.5px; color:#94a3b8; margin:8px 0 0 0;">Values are derived from the observable (cleartext) IKE phase-1 exchange. Parameters negotiated inside the encrypted phase-2 exchange are reported as <em>Not Observed</em> rather than assumed.</p>
         <table>
             <tr><th style="width:250px;">Parameter</th><th>Negotiated Wire Value</th><th>Cryptographic Evaluation</th></tr>
             <tr><td style="padding:8px; border-bottom:1px solid #334155;">IKE Version</td><td style="padding:8px; border-bottom:1px solid #334155;">{crypto.get('ike_version')}</td><td style="padding:8px; border-bottom:1px solid #334155;">{'Modern RFC 7296' if 'IKEv2' in crypto.get('ike_version', '') else 'Deprecated (vulnerable to dictionary attack)'}</td></tr>
-            <tr><td style="padding:8px; border-bottom:1px solid #334155;">Encryption Algorithm</td><td style="padding:8px; border-bottom:1px solid #334155;">{crypto.get('cipher')}</td><td style="padding:8px; border-bottom:1px solid #334155;">{'Authenticated Encryption (AEAD)' if 'GCM' in crypto.get('cipher', '') else 'CBC Mode (requires HMAC)'}</td></tr>
-            <tr><td style="padding:8px; border-bottom:1px solid #334155;">Integrity Algorithm</td><td style="padding:8px; border-bottom:1px solid #334155;">{crypto.get('auth_algo')}</td><td style="padding:8px; border-bottom:1px solid #334155;">SHA-256+ Standard Compliant</td></tr>
+            <tr><td style="padding:8px; border-bottom:1px solid #334155;">IKE (Phase-1) Cipher</td><td style="padding:8px; border-bottom:1px solid #334155;">{cipher_val}</td><td style="padding:8px; border-bottom:1px solid #334155;">{'Authenticated Encryption (AEAD)' if 'GCM' in cipher_val.upper() else 'CBC Mode (requires HMAC)'}</td></tr>
+            <tr><td style="padding:8px; border-bottom:1px solid #334155;">ESP Data Cipher</td><td style="padding:8px; border-bottom:1px solid #334155; color:#94a3b8;">{esp_cipher}</td><td style="padding:8px; border-bottom:1px solid #334155; color:#94a3b8;">Negotiated in encrypted CHILD_SA -- not observable from a passive capture</td></tr>
+            <tr><td style="padding:8px; border-bottom:1px solid #334155;">IKE (Phase-1) Integrity</td><td style="padding:8px; border-bottom:1px solid #334155;">{crypto.get('auth_algo')}</td><td style="padding:8px; border-bottom:1px solid #334155;">{_integrity_eval(crypto.get('auth_algo'))}</td></tr>
             <tr><td style="padding:8px; border-bottom:1px solid #334155;">Diffie-Hellman Group</td><td style="padding:8px; border-bottom:1px solid #334155;">{crypto.get('dh_group')}</td><td style="padding:8px; border-bottom:1px solid #334155;">Group ID {crypto.get('dh_group_id', 'N/A')}</td></tr>
-            <tr><td style="padding:8px; border-bottom:1px solid #334155;">Perfect Forward Secrecy</td><td style="padding:8px; border-bottom:1px solid #334155;">{'Enabled (CREATE_CHILD_SA / PFS)' if crypto.get('pfs_enabled') else 'Disabled'}</td><td style="padding:8px; border-bottom:1px solid #334155;">{'Protects past sessions' if crypto.get('pfs_enabled') else 'High compromise exposure'}</td></tr>
-            <tr><td style="padding:8px; border-bottom:1px solid #334155;">Encapsulation Mode</td><td style="padding:8px; border-bottom:1px solid #334155;">{crypto.get('mode', 'tunnel').upper()}</td><td style="padding:8px; border-bottom:1px solid #334155;">Inner IP headers encrypted</td></tr>
+            <tr><td style="padding:8px; border-bottom:1px solid #334155;">Perfect Forward Secrecy</td><td style="padding:8px; border-bottom:1px solid #334155;">{pfs_wire}</td><td style="padding:8px; border-bottom:1px solid #334155;">{pfs_eval}</td></tr>
+            <tr><td style="padding:8px; border-bottom:1px solid #334155;">Encapsulation Mode</td><td style="padding:8px; border-bottom:1px solid #334155;">{mode_disp}</td><td style="padding:8px; border-bottom:1px solid #334155;">{mode_eval}</td></tr>
         </table>
+        {caveats_html}
 
         <div class="section-title">2. IKE Negotiation Message Sequence</div>
         <table>

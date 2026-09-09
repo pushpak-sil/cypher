@@ -326,7 +326,7 @@
                             <!-- 8 -->
                             <div class="glass-card glossary-card">
                                 <h3 class="glossary-term">Predicted Traffic Type</h3>
-                                <p class="glossary-def">What the ML model thinks is running inside the encrypted tunnel — VoIP, web browsing, video, email, ICMP, or file transfer.</p>
+                                <p class="glossary-def">What the ML model thinks is running inside the encrypted tunnel. The current model classifies four traffic types — ICMP, web browsing, VoIP, and video streaming.</p>
                                 <p class="glossary-why"><strong>Why it matters:</strong> Knowing the traffic type helps assess whether the tunnel's security level is appropriate for the data it carries.</p>
                             </div>
                         </div>
@@ -427,14 +427,14 @@
                 <div class="kpi-header">PROTOCOL & MODE</div>
                 <div class="kpi-hero-val" id="kpi-protocol">--</div>
                 <div class="kpi-meta">
-                    <div>Mode: <strong id="kpi-mode">--</strong></div>
-                    <div>Encapsulation: <span id="kpi-encap" class="text-muted">Transport / Tunnel</span></div>
+                    <div>Encap Mode: <strong id="kpi-mode">--</strong></div>
+                    <div class="text-muted" style="font-size:11px;">tunnel/transport negotiated in encrypted phase-2</div>
                 </div>
             </div>
 
             <!-- Cryptographic Transform -->
             <div class="kpi-card">
-                <div class="kpi-header">CIPHER & KEY EXCHANGE</div>
+                <div class="kpi-header">IKE CIPHER (PHASE-1) & KEY EXCHANGE</div>
                 <div class="kpi-hero-val text-cyan" id="kpi-cipher">--</div>
                 <div class="kpi-meta">
                     <div>DH Group: <strong id="kpi-dh">--</strong></div>

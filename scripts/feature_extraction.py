@@ -5,8 +5,19 @@ classifier will learn from.
 """
 
 import numpy as np
+from scapy.all import IP, IPv6
 
 MIN_PACKETS_REQUIRED = 5   # below this, statistics are unreliable/meaningless
+
+
+def _pkt_src(pkt):
+    """Source address of an IPv4 or IPv6 packet (None if neither layer present)."""
+    if pkt.haslayer(IP):
+        return pkt[IP].src
+    if pkt.haslayer(IPv6):
+        return pkt[IPv6].src
+    return None
+
 
 def extract_features(esp_packets, local_ip="192.168.50.10"):
     if len(esp_packets) < MIN_PACKETS_REQUIRED:
@@ -23,7 +34,7 @@ def extract_features(esp_packets, local_ip="192.168.50.10"):
 
     duration = max(times[-1], 0.001)   # avoid dividing by zero for instant flows
 
-    outbound_count = sum(1 for pkt in esp_packets if pkt["IP"].src == local_ip)
+    outbound_count = sum(1 for pkt in esp_packets if _pkt_src(pkt) == local_ip)
     direction_ratio = outbound_count / len(esp_packets)
 
     return {

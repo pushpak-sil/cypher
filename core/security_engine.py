@@ -24,12 +24,17 @@ def evaluate_security_posture(crypto_params: Dict[str, Any], esp_analysis: Dict[
     auth_algo = crypto_params.get("auth_algo", "Unknown").upper()
     dh_group = crypto_params.get("dh_group", "Unknown")
     dh_id = crypto_params.get("dh_group_id")
-    pfs = crypto_params.get("pfs_enabled", False)
+    # PFS is tri-state: "Enabled" / "Disabled" / "Not Observed". Fall back to the
+    # legacy boolean only if the newer status field is absent.
+    pfs_status = crypto_params.get("pfs_status")
+    if pfs_status is None:
+        pfs_status = "Enabled" if crypto_params.get("pfs_enabled", False) else "Disabled"
     mode = crypto_params.get("mode", "tunnel").lower()
     keylife = crypto_params.get("key_lifetime", "Standard (8h)")
 
     score = 100
     deductions = []
+    informational: List[Dict[str, Any]] = []
     threats: List[Dict[str, Any]] = []
 
     # -------------------------------------------------------------
@@ -133,8 +138,12 @@ def evaluate_security_posture(crypto_params: Dict[str, Any], esp_analysis: Dict[
 
     # -------------------------------------------------------------
     # 5. Perfect Forward Secrecy (PFS)
+    # Only penalize when there is positive wire evidence that PFS is OFF (a
+    # captured CHILD_SA rekey with no fresh DH). If no rekey was captured, PFS
+    # is Not Observed -- absence of evidence is not evidence of absence, so we
+    # raise an informational note rather than a false vulnerability + penalty.
     # -------------------------------------------------------------
-    if not pfs:
+    if pfs_status == "Disabled":
         score -= 15
         deductions.append({"component": "Forward Secrecy", "points": 15, "reason": "Perfect Forward Secrecy (PFS) is disabled"})
         threats.append({
@@ -146,6 +155,14 @@ def evaluate_security_posture(crypto_params: Dict[str, Any], esp_analysis: Dict[
             "likelihood": "Low",
             "impact": "Child SA keys are derived from the initial IKE SA key material without fresh DH exchange. If the long-term key is compromised, all past traffic can be retroactively decrypted.",
             "recommendation": "Enable PFS on Phase 2 / Child SA proposals (e.g., esp=aes256gcm16-modp2048!).",
+        })
+    elif pfs_status == "Not Observed":
+        informational.append({
+            "id": "INFO-PFS-NOT-OBSERVED",
+            "title": "PFS Status Not Determinable from Capture",
+            "detail": "No CHILD_SA rekey was captured, so PFS could not be confirmed either way. "
+                      "It is negotiated in the encrypted phase-2 exchange and only revealed on rekey. "
+                      "No score penalty is applied for an unobservable parameter.",
         })
 
     # -------------------------------------------------------------
@@ -277,12 +294,22 @@ crypto ipsec profile HARDENED-IPSEC-PROFILE
  set security-association lifetime seconds 3600
 """
 
+    # Fold any observability caveats recorded by the dissector (mode / ESP
+    # cipher not determinable from a passive capture) into informational notes.
+    for note in crypto_params.get("observability_notes", []):
+        informational.append({
+            "id": "INFO-OBSERVABILITY",
+            "title": "Parameter Not Determinable from Passive Capture",
+            "detail": note,
+        })
+
     return {
         "security_score": score,
         "posture": posture,
         "posture_badge": posture_badge,
         "posture_color": posture_color,
         "deductions": deductions,
+        "informational": informational,
         "threat_matrix": threats,
         "compliance": compliance,
         "remediations": {

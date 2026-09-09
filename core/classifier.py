@@ -111,9 +111,7 @@ def classify_esp_traffic(esp_packets, local_ip="192.168.50.10"):
 
     probs = model.predict_proba(feat_df)[0]
     t1 = time.perf_counter()
-    latency_ms = round((t1 - t0) * 1000, 2)
-    if latency_ms < 0.5:
-        latency_ms = 1.84
+    latency_ms = round((t1 - t0) * 1000, 3)   # report the real measured latency
 
     prob_dict = {
         cls: round(float(p), 4)
@@ -127,9 +125,17 @@ def classify_esp_traffic(esp_packets, local_ip="192.168.50.10"):
         try:
             raw_decision = float(iso.decision_function(feat_df)[0])
             raw_pred = int(iso.predict(feat_df)[0])  # 1 = inlier, -1 = outlier
-            # Normalize decision function to 0.0 - 100.0% anomaly risk score
-            norm_score = max(0.0, min(100.0, (0.12 - raw_decision) / 0.28 * 100))
-            is_anomaly = bool(raw_pred == -1 or norm_score >= 60.0)
+            # Normalize the Isolation Forest decision score into a 0-100 anomaly
+            # risk display using the baseline decision distribution captured at
+            # train time (stored in the bundle). decision_function is higher for
+            # normal samples, so risk rises as the score falls below the mean.
+            mean = float(bundle.get("normal_score_mean", 0.0))
+            std = float(bundle.get("normal_score_std", 0.0)) or 1e-6
+            z = (mean - raw_decision) / std            # 0 at baseline mean, +ve when anomalous
+            norm_score = max(0.0, min(100.0, z * 25.0))  # ~4 std below mean saturates at 100%
+            # Trust the detector's own inlier/outlier verdict so live behaviour
+            # matches the detection_rate / false_alarm_rate reported in metrics.json.
+            is_anomaly = bool(raw_pred == -1)
             anomaly_score = round(norm_score, 1)
 
             # Anomaly diagnostic verdict

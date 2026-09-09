@@ -307,11 +307,24 @@ function renderDashboard(data) {
 
     // Protocol & Cipher Cards
     document.getElementById("kpi-protocol").textContent = crypto.ike_version || "IKEv2";
-    document.getElementById("kpi-mode").textContent = (crypto.mode || "Tunnel").toUpperCase();
+    document.getElementById("kpi-mode").textContent = crypto.mode || "Not Observed";
     document.getElementById("kpi-cipher").textContent = crypto.cipher || "Unknown";
     document.getElementById("kpi-dh").textContent = crypto.dh_group || "None";
-    document.getElementById("kpi-pfs").textContent = crypto.pfs_enabled ? "PFS Active" : "No PFS";
-    document.getElementById("kpi-pfs").style.color = crypto.pfs_enabled ? "var(--emerald)" : "var(--rose)";
+
+    // PFS is tri-state: Enabled (green) / Disabled (red) / Not Observed (neutral).
+    // "Not Observed" is not a failure -- it means no CHILD_SA rekey was captured.
+    const pfsStatus = crypto.pfs_status || (crypto.pfs_enabled ? "Enabled" : "Not Observed");
+    const pfsEl = document.getElementById("kpi-pfs");
+    if (pfsStatus === "Enabled") {
+        pfsEl.textContent = "PFS Active";
+        pfsEl.style.color = "var(--emerald)";
+    } else if (pfsStatus === "Disabled") {
+        pfsEl.textContent = "No PFS";
+        pfsEl.style.color = "var(--rose)";
+    } else {
+        pfsEl.textContent = "Not Observed";
+        pfsEl.style.color = "var(--text-muted, #94a3b8)";
+    }
 
     // AI Prediction Card & Anomaly Verdict
     document.getElementById("kpi-ai-pred").textContent = (ai.predicted_traffic || "Unknown").toUpperCase();

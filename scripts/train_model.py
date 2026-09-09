@@ -10,7 +10,7 @@ import json
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold, cross_validate
+from sklearn.model_selection import StratifiedKFold, cross_validate, cross_val_predict
 from sklearn.ensemble import (
     RandomForestClassifier,
     GradientBoostingClassifier,
@@ -118,13 +118,21 @@ def train_and_evaluate():
 
     print(f"\n[+] Selected best multi-class classifier: {best_model_name} (F1: {best_f1*100:.2f}%)")
     best_clf = candidates[best_model_name]
-    best_clf.fit(X_normal, y_normal)
 
-    y_pred = best_clf.predict(X_normal)
+    # Honest held-out evaluation: the confusion matrix, accuracy, and per-class
+    # report are computed from cross-validated (out-of-fold) predictions rather
+    # than by predicting on the same rows the model trained on -- the latter
+    # reports a meaningless ~1.0 that overstates real-world generalization.
+    y_pred = cross_val_predict(best_clf, X_normal, y_normal, cv=cv)
     acc = accuracy_score(y_normal, y_pred)
     f1 = f1_score(y_normal, y_pred, average="weighted")
     cm = confusion_matrix(y_normal, y_pred).tolist()
-    report = classification_report(y_normal, y_pred, target_names=class_names, output_dict=True)
+    report = classification_report(
+        y_normal, y_pred, target_names=class_names, output_dict=True, zero_division=0
+    )
+
+    # Fit the final deployed model on ALL normal samples for best inference quality.
+    best_clf.fit(X_normal, y_normal)
 
     # Global Gini Feature Importance
     importances = best_clf.feature_importances_

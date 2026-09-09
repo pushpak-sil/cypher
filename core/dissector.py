@@ -253,10 +253,11 @@ def parse_sa_proposals(body, version=2):
 
             transform_info = {"type_id": t_type, "transform_id": t_id}
 
-            # Decode attributes (e.g., Key Length)
+            # Decode attributes. In IKEv2 the only defined transform attribute
+            # is type 14 (Key Length); encapsulation mode is NOT carried here
+            # (that is an IKEv1 phase-2 attribute, and phase-2 is encrypted).
             attr_offset = t_offset + 8
             key_len = None
-            encap_mode = None
             while attr_offset + 4 <= t_offset + t_len:
                 attr_type_raw = struct.unpack("!H", body[attr_offset:attr_offset + 2])[0]
                 is_af = (attr_type_raw & 0x8000) != 0
@@ -271,13 +272,9 @@ def parse_sa_proposals(body, version=2):
 
                 if attr_type == 14:  # Key Length in bits
                     key_len = attr_val
-                elif attr_type == 4:  # IKEv1 Encapsulation Mode: 1=Tunnel, 2=Transport
-                    encap_mode = "tunnel" if attr_val == 1 else "transport" if attr_val == 2 else f"mode-{attr_val}"
 
             if key_len:
                 transform_info["key_length"] = key_len
-            if encap_mode:
-                transform_info["encap_mode"] = encap_mode
 
             if t_type == 1:  # Encryption
                 name = ENCR_MAP.get(t_id, f"ENCR-{t_id}")
@@ -460,16 +457,26 @@ def analyze_pcap(pcap_path):
     esp_records = []
     ah_records = []
 
-    # Parsed Cryptographic parameters
+    # Parsed Cryptographic parameters.
+    # NOTE on observability: a passive capture only exposes the IKE (phase-1)
+    # SA proposal in cleartext. The ESP data cipher, the encapsulation mode
+    # (tunnel/transport) and PFS are all negotiated inside the ENCRYPTED
+    # phase-2 exchange (IKE_AUTH / Quick Mode) or only revealed on a CHILD_SA
+    # rekey. We therefore report those honestly as "Not Observed" unless the
+    # capture actually contains the evidence, rather than fabricating a value.
     inferred_crypto = {
         "ike_version": "Unknown",
-        "cipher": "Unknown",
-        "auth_algo": "Unknown",
+        "cipher": "Unknown",              # IKE (phase-1) cipher -- the only one on the wire
+        "cipher_scope": "IKE (Phase-1) SA",
+        "auth_algo": "Unknown",           # IKE (phase-1) integrity
         "dh_group": "Unknown",
         "dh_group_id": None,
-        "pfs_enabled": False,
-        "mode": "Unknown",
+        "pfs_enabled": False,             # back-compat bool: True only when positively observed
+        "pfs_status": "Not Observed",     # "Enabled" | "Disabled" | "Not Observed"
+        "mode": "Not Observed",           # tunnel/transport -- negotiated in encrypted phase-2
+        "esp_cipher": "Not Observed",     # ESP data cipher -- negotiated in encrypted CHILD_SA
         "key_lifetime": "Standard (8h)",
+        "observability_notes": [],
     }
 
     spis_observed = set()
@@ -494,7 +501,7 @@ def analyze_pcap(pcap_path):
                         inferred_crypto["dh_group"] = p["dh_group"]
                         inferred_crypto["dh_group_id"] = p.get("dh_group_id")
 
-                    # Check SA proposals
+                    # Check SA proposals (IKE / phase-1 cipher suite -- observable)
                     for prop in p.get("proposals", []):
                         for trans in prop.get("transforms", []):
                             t_type = trans.get("type")
@@ -506,12 +513,19 @@ def analyze_pcap(pcap_path):
                             elif t_type == "DH Group" and inferred_crypto["dh_group"] == "Unknown":
                                 inferred_crypto["dh_group"] = t_name
                                 inferred_crypto["dh_group_id"] = trans.get("dh_group_id")
-                            if trans.get("encap_mode"):
-                                inferred_crypto["mode"] = trans["encap_mode"]
 
-                    # Check for CREATE_CHILD_SA (indicates PFS / rekeying)
-                    if ike_info.get("exchange_id") == 36:
-                        inferred_crypto["pfs_enabled"] = True
+                # PFS is only observable from a CHILD_SA rekey (CREATE_CHILD_SA,
+                # exchange 36): a Key Exchange payload inside it means a fresh DH
+                # was performed (PFS in use); its absence means the rekey reused
+                # existing key material (no PFS). Initial handshakes carry no such
+                # evidence, so the status stays "Not Observed".
+                if ike_info.get("exchange_id") == 36:
+                    has_ke = any(
+                        str(pp.get("name", "")).startswith("Key Exchange")
+                        for pp in ike_info.get("payloads", [])
+                    )
+                    inferred_crypto["pfs_status"] = "Enabled" if has_ke else "Disabled"
+                    inferred_crypto["pfs_enabled"] = has_ke
 
         # Check ESP
         esp_info = dissect_esp_packet(pkt)
@@ -524,15 +538,25 @@ def analyze_pcap(pcap_path):
         if ah_info:
             ah_records.append(ah_info)
 
-    # Mode heuristic if not explicitly captured in IKE proposal attributes
-    if inferred_crypto["mode"] == "Unknown":
-        if esp_records:
-            # Check packet payload overhead vs standard MTU:
-            # Tunnel mode encapsulates inner IP header (at least 20 extra bytes)
-            # We also check if traffic is mostly host-to-host or routed
-            inferred_crypto["mode"] = "tunnel"  # Default in standard IPsec deployments
-        else:
-            inferred_crypto["mode"] = "tunnel"
+    # Encapsulation mode and the ESP data cipher are negotiated inside the
+    # encrypted phase-2 exchange (IKEv2 IKE_AUTH / IKEv1 Quick Mode), so a
+    # passive capture cannot reveal them -- we report that honestly instead of
+    # defaulting to "tunnel". Record caveats for the report/dashboard.
+    if inferred_crypto["mode"] == "Not Observed":
+        inferred_crypto["observability_notes"].append(
+            "Encapsulation mode (tunnel/transport) is negotiated in the encrypted "
+            "phase-2 exchange and is not determinable from a passive capture."
+        )
+    if inferred_crypto["esp_cipher"] == "Not Observed":
+        inferred_crypto["observability_notes"].append(
+            "ESP data cipher is negotiated in the encrypted CHILD_SA; the cipher "
+            "shown is the observable IKE (phase-1) SA cipher."
+        )
+    if inferred_crypto["pfs_status"] == "Not Observed":
+        inferred_crypto["observability_notes"].append(
+            "PFS status requires a captured CHILD_SA rekey; none was present, so "
+            "it is reported as Not Observed rather than assumed disabled."
+        )
 
     # Replay Protection Analysis on ESP
     seq_analysis = {

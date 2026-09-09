@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     iperf3 \
     net-tools \
     procps \
+    python3 \
     && rm -rf /var/lib/apt/lists/*
 
 CMD ["tail", "-f", "/dev/null"]

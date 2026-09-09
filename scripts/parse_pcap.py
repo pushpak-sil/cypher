@@ -3,10 +3,27 @@ Low-level pcap reading utilities: given a .pcap file, sort its packets
 into IKE / ESP / AH categories. No statistics are computed here.
 """
 
-from scapy.all import rdpcap, IP, UDP, Raw
+from scapy.all import rdpcap, IP, IPv6, UDP, Raw
 
 NATT_PORT = 4500
 MIN_ESP_PAYLOAD_BYTES = 8   # SPI (4 bytes) + sequence number (4 bytes)
+
+ESP_PROTO = 50   # IP protocol / IPv6 next-header value for ESP
+AH_PROTO = 51    # IP protocol / IPv6 next-header value for AH
+
+
+def _l3_proto(pkt):
+    """
+    Return the L3 payload protocol number for an IPv4 or IPv6 packet,
+    or None if the packet carries neither. IPv4 stores it in `proto`,
+    IPv6 in `nh` (next header). Handling both is what lets the analyzer
+    support IPv6 IPsec tunnels, not just IPv4.
+    """
+    if pkt.haslayer(IP):
+        return pkt[IP].proto
+    if pkt.haslayer(IPv6):
+        return pkt[IPv6].nh
+    return None
 
 def load_packets(pcap_path):
     """Read every packet in the file into a Python list of Scapy packet objects."""
@@ -25,15 +42,16 @@ def is_natt_keepalive(pkt):
 
 def get_esp_packets(packets):
     """
-    Return genuine ESP data packets only -- whether raw ESP (IP protocol 50)
-    or NAT-T-wrapped ESP (UDP port 4500), and excluding keepalives.
+    Return genuine ESP data packets only -- whether raw ESP (IP protocol 50
+    or IPv6 next-header 50) or NAT-T-wrapped ESP (UDP port 4500), and
+    excluding keepalives. Works for both IPv4 and IPv6 captures.
     """
     esp_packets = []
     for pkt in packets:
-        if not pkt.haslayer(IP):
+        if not (pkt.haslayer(IP) or pkt.haslayer(IPv6)):
             continue
 
-        if pkt[IP].proto == 50:
+        if _l3_proto(pkt) == ESP_PROTO:
             esp_packets.append(pkt)
             continue
 
@@ -51,5 +69,6 @@ def get_ike_packets(packets):
             if p.haslayer(UDP) and (p[UDP].sport == 500 or p[UDP].dport == 500)]
 
 def get_ah_packets(packets):
-    """AH uses IP protocol number 51."""
-    return [p for p in packets if p.haslayer(IP) and p[IP].proto == 51]
+    """AH uses IP protocol number 51 (IPv4) or next-header 51 (IPv6)."""
+    return [p for p in packets
+            if (p.haslayer(IP) or p.haslayer(IPv6)) and _l3_proto(p) == AH_PROTO]
